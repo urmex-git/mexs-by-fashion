@@ -1,92 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Mexs By Fashion</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Shop MAX ULTIMATE</title>
 <style>
-body{
-margin:0;
-font-family:Arial;
-background:black;
-color:white;
-text-align:center;
-}
-header{
-padding:20px;
-font-size:28px;
-font-weight:bold;
-letter-spacing:2px;
-}
-.hero{
-padding:80px 20px;
-}
-.products{
-display:flex;
-justify-content:center;
-gap:30px;
-flex-wrap:wrap;
-padding:40px;
-}
-.card{
-background:#111;
-padding:20px;
-border-radius:10px;
-width:250px;
-}
-.card img{
-width:100%;
-border-radius:10px;
-}
-button{
-padding:10px 20px;
-background:white;
-color:black;
-border:none;
-font-weight:bold;
-cursor:pointer;
-margin-top:10px;
-}
-footer{
-padding:20px;
-background:#111;
-margin-top:50px;
-}
+  body { font-family: Arial, sans-serif; margin:0; padding:20px; background:#f4f4f4; }
+  h1 { text-align:center; color:#333; }
+  .shop-container { max-width:800px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.1); }
+  input, button, select { width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; }
+  button { background:#FF5722; color:#fff; border:none; cursor:pointer; transition:0.3s; }
+  button:hover { background:#E64A19; }
+  ul { list-style:none; padding:0; margin:0; }
+  li { display:flex; align-items:center; justify-content:space-between; background:#f1f1f1; margin:10px 0; padding:10px; border-radius:8px; }
+  li img { width:60px; height:60px; border-radius:8px; object-fit:cover; margin-right:10px; }
+  .product-info { flex:1; }
+  .actions button { margin-left:5px; background:#2196F3; }
+  .actions button.delete { background:#f44336; }
+  .cart { margin-top:20px; background:#e3f2fd; padding:10px; border-radius:8px; }
+  .cart ul { max-height:200px; overflow-y:auto; }
+  .checkout { background:#4CAF50; margin-top:10px; }
+  .suggestions { background:#fff3e0; padding:10px; margin-top:15px; border-radius:8px; }
+  .suggestions ul { max-height:150px; overflow-y:auto; }
 </style>
 </head>
-
 <body>
 
-<header>
-MEXS BY FASHION
-</header>
+<h1>AI Shop MAX ULTIMATE</h1>
+<div class="shop-container">
+  <input type="text" id="productName" placeholder="Product Name">
+  <input type="number" id="productPrice" placeholder="Price (₹)">
+  <input type="text" id="productCategory" placeholder="Category">
+  <input type="file" id="productImage">
+  <button onclick="addProduct()">Add Product</button>
 
-<div class="hero">
-<h1>Wear Your Attitude</h1>
-<p>Premium Streetwear Collection</p>
+  <input type="text" id="searchInput" placeholder="Search Products..." onkeyup="filterProducts()">
+
+  <label>Filter by Category:</label>
+  <select id="categoryFilter" onchange="filterProducts()">
+    <option value="">All Categories</option>
+  </select>
+
+  <ul id="productList"></ul>
+
+  <div class="cart">
+    <h3>Cart</h3>
+    <ul id="cartList"></ul>
+    <strong>Total: ₹<span id="totalPrice">0</span></strong>
+    <button class="checkout" onclick="checkout()">Checkout (UPI/PayPal)</button>
+  </div>
+
+  <div class="suggestions">
+    <h3>AI Product Recommendations</h3>
+    <ul id="suggestionsList"></ul>
+  </div>
 </div>
 
-<h2>Our Products</h2>
+<script>
+  let products = JSON.parse(localStorage.getItem('products')) || [];
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-<div class="products">
+  function saveData() {
+    localStorage.setItem('products', JSON.stringify(products));
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
 
-<div class="card">
-<img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab" alt="Tshirt">
-<h3>Black Street T-Shirt</h3>
-<p>₹799</p>
-<button>Buy Now</button>
-</div>
+  function addProduct() {
+    const name = document.getElementById('productName').value.trim();
+    const price = document.getElementById('productPrice').value.trim();
+    const category = document.getElementById('productCategory').value.trim();
+    const imageInput = document.getElementById('productImage');
 
-<div class="card">
-<img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c" alt="Tshirt">
-<h3>White Oversize T-Shirt</h3>
-<p>₹899</p>
-<button>Buy Now</button>
-</div>
+    if(!name || !price || !category || !imageInput.files[0]) { alert('Fill all fields + select image'); return; }
 
-</div>
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const product = { name, price: parseFloat(price), category, image: e.target.result };
+      products.push(product);
+      saveData();
+      displayProducts();
+      updateCategoryFilter();
+      updateSuggestions();
+    }
+    reader.readAsDataURL(imageInput.files[0]);
 
-<footer>
-© 2026 Mexs By Fashion | All Rights Reserved
-</footer>
+    document.getElementById('productName').value = '';
+    document.getElementById('productPrice').value = '';
+    document.getElementById('productCategory').value = '';
+    imageInput.value = '';
+  }
+
+  function displayProducts(filter='') {
+    const list = document.getElementById('productList');
+    const catFilter = document.getElementById('categoryFilter').value;
+    list.innerHTML = '';
+    products.forEach((p,i) => {
+      if((p.name.toLowerCase().includes(filter.toLowerCase()) || p.category.toLowerCase().includes(filter.toLowerCase()))
+         && (catFilter === '' || p.category === catFilter)) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <img src="${p.image}" alt="${p.name}">
+          <div class="product-info">
+            <strong>${p.name}</strong> <br>₹${p.price} <br>Category: ${p.category}
+          </div>
+          <div class="actions">
+            <button onclick="editProduct(${i})">Edit</button>
+            <button class="delete" onclick="deleteProduct(${i})">Delete</button>
+            <button onclick="addToCart(${i})">Add to Cart</button>
+          </div>
+        `;
+        list.appendChild(li);
+      }
+    });
+  }
+
+  function editProduct(index) {
+    const p = products[index];
+    const newName = prompt("Edit Name:", p.name);
+    const newPrice = prompt("Edit Price:", p.price);
+    const newCategory = prompt("Edit Category:", p.category);
+    if(newName && newPrice && newCategory) {
+      products[index] = {...p, name:newName, price:parseFloat(newPrice), category:newCategory};
+      saveData();
+      displayProducts();
+      updateCategoryFilter();
+      updateSuggestions();
+    }
+  }
+
+  function deleteProduct(index) {
+    products.splice(index,1);
+    saveData();
+    displayProducts();
+    updateCategoryFilter();
+    updateSuggestions();
+  }
+
+  function filterProducts() {
+    const filter = document.getElementById('searchInput').value;
+    displayProducts(filter);
+  }
+
+  function updateCategoryFilter() {
+    const select = document.getElementById('categoryFilter');
+    const categories = [...new Set(products.map(p=>p.category))];
+    select.innerHTML = '<option value="">All Categories</option>';
+    categories.forEach(cat => { select.innerHTML += `<option value="${cat}">${cat}</option>`; });
+  }
+
+  function addToCart(index) {
+    cart.push(products[index]);
+    saveData();
+    displayCart();
+    updateSuggestions();
+  }
+
+  function displayCart() {
+    const cartList = document.getElementById('cartList');
+    cartList.innerHTML = '';
+    let total = 0;
+    cart.forEach((item,i)=>{
+      total += item.price;
+      const li = document.createElement('li');
+      li.innerHTML = `${item.name} - ₹${item.price} <button onclick="removeFromCart(${i})">Remove</button>`;
+      cartList.appendChild(li);
+    });
+    document.getElementById('totalPrice').innerText = total.toFixed(2);
+  }
+
+  function removeFromCart(index) {
+    cart.splice(index,1);
+    saveData();
+    displayCart();
+    updateSuggestions();
+  }
+
+  function checkout() {
+    if(cart.length === 0){ alert("Cart is empty!"); return; }
+    alert(`Checkout Simulation\nTotal Amount: ₹${document.getElementById('totalPrice').innerText}\nSimulating UPI/PayPal Payment...`);
+    cart = [];
+    saveData();
+    displayCart();
+    updateSuggestions();
+  }
+
+  function updateSuggestions() {
+    const suggestionsList = document.getElementById('suggestionsList');
+    suggestionsList.innerHTML = '';
+    if(cart.length === 0) {
+      // Top 5 most frequent category products
+      const categories = {};
+      products.forEach(p=>categories[p.category]=(categories[p.category]||0)+1);
+      const sortedCats = Object.keys(categories).sort((a,b)=>categories[b]-categories[a]);
+      sortedCats.slice(0,5).forEach(cat=>{
+        const li = document.createElement('li');
+        li.textContent = `Top category: ${cat}`;
+        suggestionsList.appendChild(li);
+      });
+    } else {
+      // Recommend products from same categories in cart
+      const cartCats = [...new Set(cart.map(p=>p.category))];
+      const recommended = products.filter(p=>cartCats.includes(p.category) && !cart.includes(p));
+      recommended.slice(0,5).forEach(p=>{
+        const li = document.createElement('li');
+        li.textContent = `Recommended: ${p.name} (${p.category})`;
+        suggestionsList.appendChild(li);
+      });
+    }
+  }
+
+  // Initial load
+  displayProducts();
+  displayCart();
+  updateCategoryFilter();
+  updateSuggestions();
+</script>
 
 </body>
 </html>
