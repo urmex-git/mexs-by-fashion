@@ -3,126 +3,106 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fashion by Mexs</title>
+<title>Mexs by Fashion</title>
 <style>
 body { font-family: Arial, sans-serif; margin:0; padding:20px; background:#f4f4f4; }
 h1 { text-align:center; color:#333; margin-bottom:20px; }
-.shop-container { max-width:750px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.1);}
-input, button, select { width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; }
-button { background:#FF5722; color:#fff; border:none; cursor:pointer; transition:0.3s; }
+.shop-container { max-width:1000px; margin:auto; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:20px; }
+.flip-card { background-color: transparent; width:180px; height:250px; perspective:1000px; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+.flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius:12px; overflow:hidden; box-shadow:0 6px 10px rgba(0,0,0,0.15);}
+.flip-card-front { background:#fff; display:flex; align-items:center; justify-content:center; }
+.flip-card-front img { width:100%; height:100%; object-fit:cover; }
+.flip-card-back { background:#ffebcd; color:#333; transform: rotateY(180deg); padding:10px; display:flex; flex-direction:column; justify-content:center; }
+.admin-panel { max-width:500px; margin:20px auto; background:#ffe0b2; padding:20px; border-radius:12px; box-shadow:0 6px 10px rgba(0,0,0,0.1);}
+input, button { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ccc; }
+button { background:#FF5722; color:#fff; border:none; cursor:pointer; transition:0.3s;}
 button:hover { background:#E64A19; }
-ul { list-style:none; padding:0; margin:0; }
-li { display:flex; align-items:center; justify-content:space-between; background:#f1f1f1; margin:10px 0; padding:10px; border-radius:8px; }
-li img { width:60px; height:60px; border-radius:8px; object-fit:cover; margin-right:10px; }
-.product-info { flex:1; }
-.actions button { margin-left:5px; background:#2196F3; }
-.actions button.delete { background:#f44336; }
-.cart { margin-top:20px; background:#e3f2fd; padding:10px; border-radius:8px; }
-.cart ul { max-height:200px; overflow-y:auto; }
-.checkout { background:#4CAF50; margin-top:10px; }
-.suggestions { background:#fff3e0; padding:10px; margin-top:15px; border-radius:8px; }
-.suggestions ul { max-height:150px; overflow-y:auto; }
-.preview { display:flex; align-items:center; margin-bottom:10px; }
-.preview img { width:80px; height:80px; object-fit:cover; border-radius:8px; margin-right:10px; }
-.admin-panel { background:#ffe0b2; padding:10px; border-radius:8px; margin-bottom:15px; display:none; }
+.preview img { width:80px; height:80px; object-fit:cover; border-radius:8px; margin-bottom:10px;}
+.actions { margin-top:10px; display:flex; justify-content:space-between;}
+.actions button { width:48%; }
 </style>
 </head>
 <body>
 
-<h1>Fashion by Mexs</h1>
-<div class="shop-container">
+<h1>Mexs by Fashion</h1>
 
-<div id="loginPrompt">
+<div id="loginPrompt" style="text-align:center;">
   <button onclick="adminLogin()">Admin Login</button>
 </div>
 
-<div class="admin-panel" id="adminPanel">
+<div class="admin-panel" id="adminPanel" style="display:none;">
   <h3>Admin Upload Panel</h3>
   <input type="file" id="productImage" accept="image/*" onchange="showPreview(event)">
   <div class="preview" id="imagePreview"></div>
-
   <input type="text" id="productName" placeholder="Product Name">
   <input type="number" id="productPrice" placeholder="Price (₹)">
   <input type="text" id="productCategory" placeholder="Category">
   <button onclick="addProduct()">Add Product</button>
 </div>
 
-<input type="text" id="searchInput" placeholder="Search Products..." onkeyup="filterProducts()">
-<select id="categoryFilter" onchange="filterProducts()"><option value="">All Categories</option></select>
-
-<ul id="productList"></ul>
-
-<div class="cart">
-  <h3>Cart</h3>
-  <ul id="cartList"></ul>
-  <strong>Total: ₹<span id="totalPrice">0</span></strong>
-  <button class="checkout" onclick="checkout()">Checkout</button>
-</div>
-
-<div class="suggestions">
-  <h3>AI Product Recommendations</h3>
-  <ul id="suggestionsList"></ul>
-</div>
-
-</div>
+<div class="shop-container" id="productContainer"></div>
 
 <script>
 let products = JSON.parse(localStorage.getItem('products'))||[];
-let cart = JSON.parse(localStorage.getItem('cart'))||[];
 let selectedImage = '';
 let adminLoggedIn = false;
 
-function adminLogin() {
+function adminLogin(){
   const password = prompt("Enter admin password:");
-  if(password === "1234") {
-    adminLoggedIn = true;
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('loginPrompt').style.display = 'none';
+  if(password==="1234"){
+    adminLoggedIn=true;
+    document.getElementById('adminPanel').style.display='block';
+    document.getElementById('loginPrompt').style.display='none';
     alert("Admin logged in!");
-  } else {
-    alert("Wrong password!");
-  }
+  } else { alert("Wrong password!"); }
 }
 
 function showPreview(event){
-  const preview = document.getElementById('imagePreview');
-  preview.innerHTML = '';
+  const preview=document.getElementById('imagePreview');
+  preview.innerHTML='';
   if(event.target.files && event.target.files[0]){
-    selectedImage = URL.createObjectURL(event.target.files[0]);
-    const img = document.createElement('img'); img.src = selectedImage;
+    selectedImage=URL.createObjectURL(event.target.files[0]);
+    const img=document.createElement('img'); img.src=selectedImage;
     preview.appendChild(img);
   }
 }
 
 function addProduct(){
   if(!adminLoggedIn){ alert("Only admin can add products!"); return; }
-  const name = document.getElementById('productName').value.trim();
-  const price = document.getElementById('productPrice').value.trim();
-  const category = document.getElementById('productCategory').value.trim();
+  const name=document.getElementById('productName').value.trim();
+  const price=document.getElementById('productPrice').value.trim();
+  const category=document.getElementById('productCategory').value.trim();
   if(!name||!price||!category||!selectedImage){ alert('Fill all fields + select image'); return; }
-  const product = {name, price:parseFloat(price), category, image:selectedImage};
-  products.unshift(product); // Messho style top add
-  saveData(); displayProducts(); updateCategoryFilter(); updateSuggestions();
-  document.getElementById('productName').value=''; 
-  document.getElementById('productPrice').value=''; 
-  document.getElementById('productCategory').value=''; 
-  document.getElementById('productImage').value=''; 
-  document.getElementById('imagePreview').innerHTML=''; 
+  const product={name,price:parseFloat(price),category,image:selectedImage};
+  products.unshift(product);
+  saveData(); displayProducts();
+  document.getElementById('productName').value='';
+  document.getElementById('productPrice').value='';
+  document.getElementById('productCategory').value='';
+  document.getElementById('productImage').value='';
+  document.getElementById('imagePreview').innerHTML='';
   selectedImage='';
 }
 
-function displayProducts(filter=''){
-  const list = document.getElementById('productList');
-  const catFilter = document.getElementById('categoryFilter').value;
-  list.innerHTML='';
+function displayProducts(){
+  const container=document.getElementById('productContainer');
+  container.innerHTML='';
   products.forEach((p,i)=>{
-    if((p.name.toLowerCase().includes(filter.toLowerCase())||p.category.toLowerCase().includes(filter.toLowerCase()))
-       && (catFilter===''||p.category===catFilter)){
-      const li=document.createElement('li');
-      li.innerHTML=`<img src="${p.image}" alt="${p.name}"><div class="product-info"><strong>${p.name}</strong><br>₹${p.price}<br>Category: ${p.category}</div>
-      <div class="actions">` + (adminLoggedIn ? `<button onclick="editProduct(${i})">Edit</button><button class="delete" onclick="deleteProduct(${i})">Delete</button>` : '') + `<button onclick="addToCart(${i})">Add to Cart</button></div>`;
-      list.appendChild(li);
-    }
+    const card=document.createElement('div'); card.className='flip-card';
+    card.innerHTML=`
+    <div class="flip-card-inner">
+      <div class="flip-card-front"><img src="${p.image}" alt="${p.name}"></div>
+      <div class="flip-card-back">
+        <strong>${p.name}</strong><br>₹${p.price}<br>${p.category}
+        ${adminLoggedIn?`<div class="actions">
+        <button onclick="editProduct(${i})">Edit</button>
+        <button onclick="deleteProduct(${i})">Delete</button>
+        </div>`:''}
+      </div>
+    </div>`;
+    container.appendChild(card);
   });
 }
 
@@ -132,55 +112,18 @@ function editProduct(index){
   const newName=prompt('Edit Name:',p.name);
   const newPrice=prompt('Edit Price:',p.price);
   const newCategory=prompt('Edit Category:',p.category);
-  if(newName&&newPrice&&newCategory){products[index]={...p,name:newName,price:parseFloat(newPrice),category:newCategory}; saveData(); displayProducts(); updateCategoryFilter(); updateSuggestions();}
-}
-
-function deleteProduct(index){ products.splice(index,1); saveData(); displayProducts(); updateCategoryFilter(); updateSuggestions(); }
-
-function filterProducts(){ const filter=document.getElementById('searchInput').value; displayProducts(filter); }
-
-function updateCategoryFilter(){
-  const select=document.getElementById('categoryFilter');
-  const categories=[...new Set(products.map(p=>p.category))];
-  select.innerHTML='<option value="">All Categories</option>'; 
-  categories.forEach(cat=>select.innerHTML+=`<option value="${cat}">${cat}</option>`);
-}
-
-function addToCart(index){ cart.push(products[index]); saveData(); displayCart(); updateSuggestions(); }
-
-function displayCart(){ 
-  const cartList=document.getElementById('cartList'); 
-  cartList.innerHTML=''; 
-  let total=0; 
-  cart.forEach((item,i)=>{total+=item.price; const li=document.createElement('li'); li.innerHTML=`${item.name} - ₹${item.price} <button onclick="removeFromCart(${i})">Remove</button>`; cartList.appendChild(li);}); 
-  document.getElementById('totalPrice').innerText=total.toFixed(2); 
-}
-
-function removeFromCart(index){ cart.splice(index,1); saveData(); displayCart(); updateSuggestions(); }
-
-function checkout(){ 
-  if(cart.length===0){alert('Cart is empty!');return;} 
-  alert(`Checkout Simulation\nTotal: ₹${document.getElementById('totalPrice').innerText}`); 
-  cart=[]; saveData(); displayCart(); updateSuggestions(); 
-}
-
-function updateSuggestions(){
-  const suggestionsList=document.getElementById('suggestionsList'); 
-  suggestionsList.innerHTML='';
-  if(cart.length===0){
-    const categories={}; products.forEach(p=>categories[p.category]=(categories[p.category]||0)+1);
-    Object.keys(categories).sort((a,b)=>categories[b]-categories[a]).slice(0,5).forEach(cat=>{const li=document.createElement('li'); li.textContent=`Top category: ${cat}`; suggestionsList.appendChild(li);});
-  } else {
-    const cartCats=[...new Set(cart.map(p=>p.category))];
-    const recommended=products.filter(p=>cartCats.includes(p.category)&&!cart.includes(p));
-    recommended.slice(0,5).forEach(p=>{const li=document.createElement('li'); li.textContent=`Recommended: ${p.name} (${p.category})`; suggestionsList.appendChild(li);});
+  if(newName&&newPrice&&newCategory){
+    products[index]={...p,name:newName,price:parseFloat(newPrice),category:newCategory};
+    saveData(); displayProducts();
   }
 }
 
-function saveData(){ localStorage.setItem('products',JSON.stringify(products)); localStorage.setItem('cart',JSON.stringify(cart)); }
+function deleteProduct(index){ products.splice(index,1); saveData(); displayProducts(); }
+
+function saveData(){ localStorage.setItem('products',JSON.stringify(products)); }
 
 // Initial load
-displayProducts(); displayCart(); updateCategoryFilter(); updateSuggestions();
+displayProducts();
 </script>
 </body>
 </html>
